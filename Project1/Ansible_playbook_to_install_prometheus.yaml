@@ -1,1 +1,96 @@
+- name: Install Prometheus and configure services
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create Prometheus and Exporter users
+      user:
+        name: "{{ item.name }}"
+        shell: "{{ item.shell }}"
+        system: yes
+        state: present
+      loop:
+        - { name: 'prometheus', shell: '/bin/false' }
+        - { name: 'exporter', shell: '/bin/false' }
 
+    - name: Create Prometheus directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: prometheus
+        group: prometheus
+        mode: '0755'
+      loop:
+        - /etc/prometheus
+        - /var/lib/prometheus
+
+    - name: Download Prometheus and Node Exporter
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { url: 'https://github.com/prometheus/prometheus/releases/download/v2.50.1/prometheus-2.50.1.linux-amd64.tar.gz', dest: '/tmp/prometheus.tar.gz' }
+        - { url: 'https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz', dest: '/tmp/node_exporter.tar.gz' }
+
+    - name: Extract Prometheus and Node Exporter
+      ansible.builtin.unarchive:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: yes
+      loop:
+        - { src: '/tmp/prometheus.tar.gz', dest: '/tmp/' }
+        - { src: '/tmp/node_exporter.tar.gz', dest: '/tmp/' }
+
+    - name: Copy Prometheus binaries
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: prometheus
+        group: prometheus
+        mode: '0755'
+      loop:
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/prometheus', dest: '/usr/local/bin/prometheus' }
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/promtool', dest: '/usr/local/bin/promtool' }
+        - { src: '/tmp/node_exporter-1.7.0.linux-amd64/node_exporter', dest: '/usr/local/bin/node_exporter' }
+
+    - name: Copy Prometheus configuration files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: prometheus
+        group: prometheus
+        mode: '0644'
+      loop:
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/prometheus.yml', dest: '/etc/prometheus/prometheus.yml' }
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/consoles', dest: '/etc/prometheus/' }
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/console_libraries', dest: '/etc/prometheus/' }
+
+    - name: Create Prometheus service file
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=PromServer
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/prometheus \
+            --config.file /etc/prometheus/prometheus.yml \
+            --storage.tsdb.path /var/lib/prometheus/ \
+            --web.console.templates=/etc/prometheus/consoles \
+            --web.console.libraries=/etc/prometheus/console_libraries
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/prometheus.service
+      notify:
+        - Reload systemd
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+        name: prometheus
+        state: restarted
