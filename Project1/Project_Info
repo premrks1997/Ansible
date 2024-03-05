@@ -1,0 +1,10 @@
+This Project is to create the anible infra
+Here we will be installing Prometheus using the ansible playbook with the required steps as in the link "https://docs.aws.amazon.com/en_us/lightsail/latest/userguide/amazon-lightsail-install-prometheus.html"
+
+Task1:
+Basic play book with the steps as in the https://docs.aws.amazon.com/en_us/lightsail/latest/userguide/amazon-lightsail-install-prometheus.html 
+Note : In this we will be learning ansible models.
+
+Task2:
+Using "Ansible Role" concept we need to craete the folder structre and install the prometheus.
+Note : In this we will be learning ansible role concept.
