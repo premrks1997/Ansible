@@ -39,30 +39,22 @@
       loop:
         - { src: '/tmp/prometheus.tar.gz', dest: '/tmp/' }
         - { src: '/tmp/node_exporter.tar.gz', dest: '/tmp/' }
-
-    - name: Copy Prometheus binaries
-      ansible.builtin.copy:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        owner: prometheus
-        group: prometheus
-        mode: '0755'
+    - name: Move Prometheus and Node Exporter binaries
+      ansible.builtin.command:
+        cmd: mv {{ item.src }} {{ item.dest }}
       loop:
         - { src: '/tmp/prometheus-2.50.1.linux-amd64/prometheus', dest: '/usr/local/bin/prometheus' }
         - { src: '/tmp/prometheus-2.50.1.linux-amd64/promtool', dest: '/usr/local/bin/promtool' }
         - { src: '/tmp/node_exporter-1.7.0.linux-amd64/node_exporter', dest: '/usr/local/bin/node_exporter' }
-
-    - name: Copy Prometheus configuration files
-      ansible.builtin.copy:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        owner: prometheus
-        group: prometheus
-        mode: '0644'
+      become: yes
+    - name: Move Prometheus configuration files
+      ansible.builtin.command:
+        cmd: mv {{ item.src }} {{ item.dest }}
       loop:
         - { src: '/tmp/prometheus-2.50.1.linux-amd64/prometheus.yml', dest: '/etc/prometheus/prometheus.yml' }
         - { src: '/tmp/prometheus-2.50.1.linux-amd64/consoles', dest: '/etc/prometheus/' }
         - { src: '/tmp/prometheus-2.50.1.linux-amd64/console_libraries', dest: '/etc/prometheus/' }
+      become: yes
 
     - name: Create Prometheus service file
       ansible.builtin.copy:
