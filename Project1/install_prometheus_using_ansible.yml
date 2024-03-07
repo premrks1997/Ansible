@@ -1,0 +1,91 @@
+- name: Install Prometheus and configure services
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create Prometheus users
+      user:
+        name: "{{ item.name }}"
+        shell: "{{ item.shell }}"
+        system: yes
+        state: present
+      loop:
+        - { name: 'prometheus', shell: '/bin/false' }
+
+    - name: Create Prometheus directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: prometheus
+        group: prometheus
+        mode: '0755'
+      loop:
+        - /etc/prometheus
+        - /var/lib/prometheus
+
+    - name: Download Prometheus
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { url: 'https://github.com/prometheus/prometheus/releases/download/v2.50.1/prometheus-2.50.1.linux-amd64.tar.gz', dest: '/tmp/prometheus.tar.gz' }
+
+    - name: Extract Prometheus
+      ansible.builtin.unarchive:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: yes
+      loop:
+        - { src: '/tmp/prometheus.tar.gz', dest: '/tmp/' }
+    - name: Move Prometheus and Node Exporter binaries
+      ansible.builtin.shell:
+        cmd: mv {{ item.src }} {{ item.dest }}
+      loop:
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/prometheus', dest: '/usr/local/bin/prometheus' }
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/promtool', dest: '/usr/local/bin/promtool' }
+      become: yes
+    - name: Move Prometheus configuration files
+      ansible.builtin.shell:
+        cmd: mv -f {{ item.src }} {{ item.dest }}
+      loop:
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/prometheus.yml', dest: '/etc/prometheus/prometheus.yml' }
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/consoles/*', dest: '/etc/prometheus/' }
+        - { src: '/tmp/prometheus-2.50.1.linux-amd64/console_libraries/*', dest: '/etc/prometheus/' }
+      become: yes
+    - name: Create Prometheus service file
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=PromServer
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/prometheus \
+            --config.file /etc/prometheus/prometheus.yml \
+            --storage.tsdb.path /var/lib/prometheus/ \
+            --web.console.templates=/etc/prometheus/consoles \
+            --web.console.libraries=/etc/prometheus/console_libraries
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/prometheus.service
+      notify:
+        - Reload systemd
+    - name: Reload systemctl daemon
+      command: systemctl daemon-reload
+
+    - name: Start Prometheus
+      systemd:
+        name: prometheus
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+        name: prometheus
+        state: restarted
