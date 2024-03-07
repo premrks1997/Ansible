@@ -1,0 +1,23 @@
+---
+# Downloads Binary and moves it to bin
+
+- name: Download prometheus
+  become: yes
+  unarchive:
+    src: "{{ prometheus_download_url }}" 
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+    exclude: ['prometheus.yml']
+    dest: /etc/prometheus
+    mode: 0755
+    owner: prometheus
+    group: prometheus
+- name: Copy prometheus binary to /usr/local/bin
+  become: yes
+  copy:
+    src: /etc/prometheus/prometheus
+    remote_src: yes
+    dest: /usr/local/bin/prometheus
+    mode: 0755
+    owner: root
+    group: root

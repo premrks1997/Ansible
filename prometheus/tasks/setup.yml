@@ -1,0 +1,40 @@
+---
+# Creates needed environment pre install
+- name: Create prometheus group
+  become: yes
+  group:
+    name: prometheus
+    system: yes
+- name: Create prometheus user
+  become: yes
+  user:
+    name: prometheus
+    group: prometheus
+    system: yes    
+    comment: Prometheus user
+    shell: /bin/false
+    create_home: false
+- name: Create /opt/prometheus
+  become: yes
+  file:
+    path: /opt/prometheus
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+- name: Create /etc/prometheus
+  become: yes
+  file:
+    path: /etc/prometheus
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+- name: Create /var/lib/prometheus
+  become: yes
+  file:
+    path: /var/lib/prometheus
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
