@@ -1,1 +1,62 @@
 ---
+# Configures installed binary
+
+- name: Install prometheus systemd definition
+  become: yes
+  copy:
+    src: "{{ instance }}/prometheus.service"
+    dest: /etc/systemd/system/prometheus.service
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  notify:
+    - restart_prometheus
+
+- name: Install prometheus configuration file.
+  become: yes
+  copy:
+    src: "{{ instance }}/prometheus.yml"
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+    backup: yes
+  notify:
+    - restart_prometheus
+
+#- name: Install prometheus alert rules
+#  become: yes
+#  copy:
+#    src: "{{ item }}"
+#    dest: /etc/prometheus/alerts.d
+#    owner: prometheus
+#    group: prometheus
+#    mode: '0644'
+#    backup: yes
+#  with_fileglob:
+#    - "{{ instance }}/alerts/*.rule"
+#  notify:
+#    - restart_prometheus
+
+- name: Enable and start prometheus service
+  become: yes
+  systemd:
+    name: prometheus
+    daemon_reload: yes
+    enabled: yes
+    state: started
+
+- name: Populate service facts
+  service_facts:
+
+- name: Open firewalld access for prometheus 9090 port
+  become: true
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  loop:
+    - 9090/tcp
+  when: ansible_facts.services['firewalld.service'].state == 'running'
