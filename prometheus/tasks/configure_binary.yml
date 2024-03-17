@@ -4,7 +4,7 @@
 - name: Install prometheus systemd definition
   become: yes
   copy:
-    src: "{{ instance }}/prometheus.service"
+    src: "prometheus.service"
     dest: /etc/systemd/system/prometheus.service
     owner: root
     group: root
@@ -16,7 +16,7 @@
 - name: Install prometheus configuration file.
   become: yes
   copy:
-    src: "{{ instance }}/prometheus.yml"
+    src: "prometheus.yml"
     dest: /etc/prometheus/prometheus.yml
     owner: prometheus
     group: prometheus
@@ -50,13 +50,13 @@
 - name: Populate service facts
   service_facts:
 
-- name: Open firewalld access for prometheus 9090 port
-  become: true
-  firewalld:
-    port: "{{ item }}"
-    permanent: yes
-    immediate: yes
-    state: enabled
-  loop:
-    - 9090/tcp
-  when: ansible_facts.services['firewalld.service'].state == 'running'
+#- name: Open firewalld access for prometheus 9090 port
+#  become: true
+#  firewalld:
+#    port: "{{ item }}"
+#    permanent: yes
+#    immediate: yes
+#    state: enabled
+#  loop:
+#    - 9090/tcp
+#  when: ansible_facts.services['firewalld.service'].state == 'running'
