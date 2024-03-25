@@ -1,0 +1,27 @@
+---
+# Creates needed environment pre install
+
+- name: Create Node Exporter group
+  become: yes
+  group:
+    name: node_exporter
+    system: yes
+
+- name: Create Node Exporter user
+  become: yes
+  user:
+    name: node_exporter
+    group: node_exporter
+    system: yes    
+    comment: Node Exporter user
+    shell: /bin/false
+    create_home: false
+
+- name: Create /opt/node_exporter
+  become: yes
+  file:
+    path: /opt/node_exporter
+    state: directory
+    owner: node_exporter
+    group: node_exporter
+    mode: '0755'

@@ -1,0 +1,20 @@
+[Unit]
+Description=Node Exporter service file
+After=network.target
+Requires=network.target
+ 
+[Service]
+Type=simple
+User=node_exporter
+Group=node_exporter
+ExecStart=/usr/local/bin/node_exporter --no-collector.hwmon
+# Failure Handling
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=3
+# Shutdown
+KillMode=process
+KillSignal=SIGINT
+[Install]
+WantedBy=multi-user.target

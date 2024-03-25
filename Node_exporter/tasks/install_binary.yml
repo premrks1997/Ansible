@@ -1,0 +1,14 @@
+---
+# Downloads Binary to bin
+
+- name: Download Node Exporter
+  become: true
+  unarchive:
+    src: "{{ node_exporter_download_url }}"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+    exclude: ['LICENSE', 'NOTICE']
+    dest: /usr/local/bin
+    mode: 0755
+    owner: node_exporter
+    group: node_exporter

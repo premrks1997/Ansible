@@ -1,0 +1,5 @@
+---
+# Tasks file for Node Exporter
+- include: setup.yml
+- include: install_binary.yml
+- include: configure_binary.yml

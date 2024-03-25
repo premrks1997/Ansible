@@ -1,0 +1,37 @@
+---
+# Configures installed binary
+
+- name: Install Node Exporter service definition
+  become: true
+  copy:
+    src: node_exporter.service
+    dest: /etc/systemd/system/node_exporter.service
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  notify:
+    - restart_node_exporter
+
+- name: Enable and start Node Exporter service
+  become: true
+  ignore_errors: yes
+  systemd:
+    name: node_exporter
+    daemon_reload: yes
+    enabled: yes
+    state: started
+
+- name: Populate service facts
+  service_facts:
+
+#- name: Open firewalld access for node exporter 9100 port
+#  become: true
+#  firewalld:
+#    port: "{{ item }}"
+#    permanent: yes
+#    immediate: yes
+#    state: enabled
+#  loop:
+#    - 9100/tcp
+#  when: ansible_facts.services['firewalld.service'].state == 'running'
